@@ -21,25 +21,21 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_level'] != 'LCG') {
         }
 
         .dashboard-header {
-            background: #512e5f;
+            background: #1b4f72;
             color: white;
             padding: 20px;
             border-radius: 6px;
-        }
-
-        .card-row {
             display: flex;
-            gap: 20px;
-            margin-top: 20px;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .card {
-            flex: 1;
-            background: white;
-            padding: 20px;
-            border-radius: 6px;
-            box-shadow: 0 0 8px rgba(0,0,0,0.1);
-            text-align: center;
+        .logout-btn {
+            background: #c0392b;
+            padding: 8px 15px;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
         }
 
         table {
@@ -50,9 +46,10 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_level'] != 'LCG') {
         }
 
         table th {
-            background: #34495e;
-            color: white;
-            padding: 12px;
+            background: #34495e;   /* FIX: NOT WHITE */
+            color: white;          /* FIX */
+            padding: 10px;
+            border: 1px solid #ccc;
         }
 
         table td {
@@ -61,17 +58,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_level'] != 'LCG') {
         }
 
         .action-btn {
-            background: #8e44ad;
+            background: #27ae60;
             color: white;
-            padding: 6px 10px;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-
-        .logout-btn {
-            background: #c0392b;
-            padding: 8px 15px;
-            color: white;
+            padding: 6px 12px;
             text-decoration: none;
             border-radius: 4px;
         }
@@ -83,25 +72,18 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_level'] != 'LCG') {
 <div class="dashboard-container">
 
     <div class="dashboard-header">
-        <h2>Land Commissioner General Dashboard</h2>
-        <p>Final Review & Decision</p>
+        <div>
+            <h2>Land Commissioner General Dashboard</h2>
+            <p>Final Review & Decision</p>
+        </div>
         <a href="../logout.php" class="logout-btn">Logout</a>
     </div>
 
-    <!-- Cards -->
-    <div class="card-row">
-        <div class="card">
-            <h3>Problems for Final Decision</h3>
-            <p>Forwarded by Provincial Offices</p>
-        </div>
-    </div>
-
-    <!-- Problem List -->
-    <h3 style="margin-top:30px;">Land Problem List</h3>
+    <h3 style="margin-top:30px;">Land Problems Forwarded by Province</h3>
 
     <table>
         <tr>
-            <th>ID</th>
+            <th>Problem ID</th>
             <th>DS Division</th>
             <th>Village</th>
             <th>Problem Type</th>
@@ -114,13 +96,13 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_level'] != 'LCG') {
                        l.ds_division, l.village
                 FROM problems p
                 JOIN land l ON p.land_id = l.land_id
-                WHERE p.current_status = 'FORWARDED_TO_LCG'
+                WHERE p.current_status = 'PENDING_LCG'
                 ORDER BY p.submitted_date DESC";
 
         $result = mysqli_query($conn, $sql);
 
         if (mysqli_num_rows($result) == 0) {
-            echo "<tr><td colspan='6' style='text-align:center;'>No problems forwarded to LCG</td></tr>";
+            echo "<tr><td colspan='6'>No problems forwarded to LCG yet.</td></tr>";
         }
 
         while ($row = mysqli_fetch_assoc($result)) {
@@ -132,8 +114,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_level'] != 'LCG') {
             <td><?php echo $row['problem_type']; ?></td>
             <td><?php echo $row['current_status']; ?></td>
             <td>
-                <a class="action-btn" href="review_problem.php?id=<?php echo $row['problem_id']; ?>">
-                    Review
+                <a class="action-btn" 
+                   href="review_problem.php?id=<?php echo $row['problem_id']; ?>">
+                   Review
                 </a>
             </td>
         </tr>
