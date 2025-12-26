@@ -1,6 +1,5 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+
 
 session_start();
 include("../config/db.php");
@@ -14,9 +13,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_level'] != 'DS') {
 $message = "";
 
 
-echo "<pre>";
-print_r($_POST);
-echo "</pre>";
 
 
 if (isset($_POST['save_land'])) {
