@@ -2,67 +2,178 @@
 session_start();
 include("config/db.php");
 
-$error = "";
+$message = "";
 
 if (isset($_POST['login'])) {
 
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    $stmt = mysqli_prepare(
-        $conn,
-        "SELECT id, role FROM users WHERE username = ? AND password = ?"
-    );
+    $stmt = mysqli_prepare($conn,
+        "SELECT id, username, password, user_level
+         FROM users
+         WHERE username=?");
 
-    mysqli_stmt_bind_param($stmt, "ss", $username, $password);
+    mysqli_stmt_bind_param($stmt, "s", $username);
+
     mysqli_stmt_execute($stmt);
-    mysqli_stmt_bind_result($stmt, $user_id, $role);
 
-    if (mysqli_stmt_fetch($stmt)) {
+    $result = mysqli_stmt_get_result($stmt);
 
-        $_SESSION['user_id'] = $user_id;
-        $_SESSION['user_level'] = $role;
+    if ($row = mysqli_fetch_assoc($result)) {
 
-        // Redirect by role
-        if ($role == 'DS') {
-            header("Location: ds/dashboard.php");
-        } elseif ($role == 'PROVINCE') {
-            header("Location: province/dashboard.php");
-        } elseif ($role == 'LCG') {
-            header("Location: lcg/dashboard.php");
-        } elseif ($role == 'ADMIN') {
-            header("Location: admin/dashboard.php");
+        if ($password == $row['password']) {
+
+            $_SESSION['user_id'] = $row['id'];
+            $_SESSION['user_level'] = $row['user_level'];
+
+            // Redirect by role
+            if ($row['user_level'] == 'DS') {
+
+                header("Location: ds/dashboard.php");
+
+            } elseif ($row['user_level'] == 'PROVINCE') {
+
+                header("Location: province/dashboard.php");
+
+            } elseif ($row['user_level'] == 'LCG') {
+
+                header("Location: lcg/dashboard.php");
+
+            } elseif ($row['user_level'] == 'ADMIN') {
+
+                header("Location: admin/dashboard.php");
+
+            }
+
+            exit();
+
         } else {
-            $error = "No dashboard defined for role: " . $role;
+            $message = "Invalid Password";
         }
-        exit();
 
     } else {
-        $error = "Invalid username or password";
+        $message = "User Not Found";
     }
-
-    mysqli_stmt_close($stmt);
 }
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Land Problem Management System</title>
+    <title>Login</title>
+
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <style>
+
+body{
+
+    margin:0;
+    padding:0;
+
+    font-family:Arial;
+
+    background:
+
+    linear-gradient(
+    rgba(0,0,0,0.5),
+    rgba(0,0,0,0.5)
+    ),
+
+    url('assets/images/bg1.png');
+
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    height:100vh;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.login-box{
+
+    width:350px;
+
+    background:rgba(255,255,255,0.95);
+
+    padding:35px;
+
+    border-radius:10px;
+
+    box-shadow:0 0 15px rgba(0,0,0,0.3);
+}
+
+.login-box h2{
+
+    text-align:center;
+    margin-bottom:25px;
+    color:#1b4f72;
+}
+
+.form-group{
+
+    margin-bottom:15px;
+}
+
+.form-group label{
+
+    display:block;
+    margin-bottom:5px;
+}
+
+.form-group input{
+
+    width:100%;
+    padding:10px;
+
+    border:1px solid #ccc;
+
+    border-radius:4px;
+}
+
+.btn-login{
+
+    width:100%;
+
+    background:#2e86de;
+
+    color:white;
+
+    border:none;
+
+    padding:12px;
+
+    border-radius:5px;
+
+    cursor:pointer;
+
+    font-size:16px;
+}
+
+.btn-login:hover{
+
+    background:#1b4f72;
+}
+
+</style>
+
 </head>
+
 <body>
 
 <div class="login-box">
+
     <h2>Land Problem Management System</h2>
 
-    <?php if ($error != "") { ?>
-        <p style="color:red; text-align:center;">
-            <?php echo htmlspecialchars($error); ?>
-        </p>
+    <?php if ($message != "") { ?>
+        <p style="color:red;"><?php echo $message; ?></p>
     <?php } ?>
 
-    <form method="post" action="">
+    <form method="post">
 
         <div class="form-group">
             <label>Username</label>
@@ -80,9 +191,6 @@ if (isset($_POST['login'])) {
 
     </form>
 
-    <div class="footer-text">
-        © Land Commissioner General’s Department
-    </div>
 </div>
 
 </body>

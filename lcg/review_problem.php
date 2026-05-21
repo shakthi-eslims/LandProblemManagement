@@ -1,114 +1,530 @@
 <?php
+
 session_start();
 include("../config/db.php");
 
-if (!isset($_SESSION['user_id']) || $_SESSION['user_level'] != 'LCG') {
+// Security Check
+
+if (!isset($_SESSION['user_id']) ||
+    $_SESSION['user_level'] != 'LCG') {
+
     header("Location: ../login.php");
     exit();
 }
 
+
+// Get Problem ID
+
 $problem_id = $_GET['id'];
 
-// Get problem + land details
-$sql = "SELECT 
-            p.problem_id,
-            p.problem_type,
-            p.problem_description,
-            p.current_status,
-            l.ds_division,
-            l.gn_division,
-            l.village,
-            l.plan_number,
-            l.lot_number,
-            l.extent,
-            l.extent_words,
-            l.boundaries,
-            l.alienation_method,
-            l.legal_owner
-        FROM problems p
-        JOIN land l ON p.land_id = l.land_id
-        WHERE p.problem_id = $problem_id";
 
-$result = mysqli_query($conn, $sql);
-$data = mysqli_fetch_assoc($result);
+// Fetch Problem + Land Details
 
-// Get remarks history
-$remarks_sql = "SELECT user_level, remark_text, remark_date
-                FROM problem_remarks
-                WHERE problem_id = $problem_id
-                ORDER BY remark_date ASC";
-$remarks = mysqli_query($conn, $remarks_sql);
+$sql = "
 
-// Save LCG decision
-if (isset($_POST['save_decision'])) {
-    $decision = $_POST['decision'];
+SELECT
 
-    mysqli_query($conn, "
-        INSERT INTO problem_remarks 
-        (problem_id, user_id, user_level, remark_text)
-        VALUES 
-        ($problem_id, {$_SESSION['user_id']}, 'LCG', '$decision')
-    ");
+p.*,
 
-    mysqli_query($conn, "
-        UPDATE problems 
-        SET current_status = 'DECIDED'
-        WHERE problem_id = $problem_id
-    ");
+l.ds_division,
+l.gn_division,
+l.village,
+l.plan_number,
+l.lot_number,
+l.extent,
+l.extent_words,
+l.boundaries,
+l.alienation_method,
+l.legal_owner,
+
+pr.province_name
+
+FROM problems p
+
+JOIN land l
+ON p.land_id = l.land_id
+
+JOIN provinces pr
+ON p.province_id = pr.province_id
+
+WHERE p.problem_id = '$problem_id'
+
+";
+
+$result =
+mysqli_query($conn, $sql);
+
+$problem =
+mysqli_fetch_assoc($result);
+
+
+// Fetch DS Recommendation
+
+$ds_remark = mysqli_fetch_assoc(
+
+mysqli_query(
+
+$conn,
+
+"SELECT remark_text
+
+FROM problem_remarks
+
+WHERE
+
+problem_id='$problem_id'
+
+AND
+
+user_level='DS'"
+
+)
+
+);
+
+
+// Fetch Province Recommendation
+
+$province_remark = mysqli_fetch_assoc(
+
+mysqli_query(
+
+$conn,
+
+"SELECT remark_text
+
+FROM problem_remarks
+
+WHERE
+
+problem_id='$problem_id'
+
+AND
+
+user_level='PROVINCE'"
+
+)
+
+);
+
+
+// Submit Final Decision
+
+if(isset($_POST['submit'])) {
+
+    $decision =
+    mysqli_real_escape_string(
+
+    $conn,
+
+    $_POST['final_decision']
+
+    );
+
+
+    // Save LCG Final Decision
+
+    mysqli_query(
+
+    $conn,
+
+    "INSERT INTO problem_remarks
+
+    (
+
+    problem_id,
+    user_level,
+    remark_text
+
+    )
+
+    VALUES
+
+    (
+
+    '$problem_id',
+    'LCG',
+    '$decision'
+
+    )"
+
+    );
+
+
+    // Update Status
+
+    mysqli_query(
+
+    $conn,
+
+    "UPDATE problems
+
+    SET current_status='DECIDED'
+
+    WHERE problem_id='$problem_id'"
+
+    );
+
 
     header("Location: dashboard.php");
+
     exit();
 }
+
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-    <title>LCG Review</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+
+<title>
+LCG Final Review
+</title>
+
+<link rel="stylesheet"
+href="../assets/css/style.css">
+
+<style>
+
+body{
+    font-family:Arial;
+    background:#f4f6f8;
+}
+
+.container{
+    width:85%;
+    margin:20px auto;
+    background:white;
+    padding:25px;
+    border-radius:8px;
+}
+
+h2{
+    color:#1b4f72;
+}
+
+.section{
+    margin-bottom:25px;
+}
+
+.section h3{
+    background:#1b4f72;
+    color:white;
+    padding:10px;
+    border-radius:5px;
+}
+
+p{
+    line-height:1.7;
+}
+
+textarea{
+    width:100%;
+    height:150px;
+    padding:10px;
+}
+
+.btn{
+    background:#27ae60;
+    color:white;
+    border:none;
+    padding:12px 20px;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+.pdf-link{
+    display:block;
+    margin-bottom:10px;
+    color:#2e86de;
+    text-decoration:none;
+    font-weight:bold;
+}
+
+.back-btn{
+    display:inline-block;
+    margin-top:20px;
+    background:#34495e;
+    color:white;
+    padding:10px 15px;
+    text-decoration:none;
+    border-radius:5px;
+}
+
+</style>
+
 </head>
+
 <body>
 
-<div class="dashboard-container">
+<div class="container">
 
-<h2>Land Problem – Full Review (LCG)</h2>
+<h2>
+LCG Final Review & Decision
+</h2>
 
-<h3>Land Details</h3>
-<ul>
-    <li><b>DS Division:</b> <?php echo $data['ds_division']; ?></li>
-    <li><b>GN Division:</b> <?php echo $data['gn_division']; ?></li>
-    <li><b>Village:</b> <?php echo $data['village']; ?></li>
-    <li><b>Plan / Lot:</b> <?php echo $data['plan_number']; ?> / <?php echo $data['lot_number']; ?></li>
-    <li><b>Extent:</b> <?php echo $data['extent']; ?> (<?php echo $data['extent_words']; ?>)</li>
-    <li><b>Boundaries:</b> <?php echo $data['boundaries']; ?></li>
-    <li><b>Alienation Method:</b> <?php echo $data['alienation_method']; ?></li>
-    <li><b>Legal Owner:</b> <?php echo $data['legal_owner']; ?></li>
-</ul>
 
-<h3>Problem Details</h3>
-<p><b>Type:</b> <?php echo $data['problem_type']; ?></p>
-<p><?php echo $data['problem_description']; ?></p>
+<!-- Land Details -->
 
-<h3>Recommendation History</h3>
-<?php while ($r = mysqli_fetch_assoc($remarks)) { ?>
-    <p>
-        <b><?php echo $r['user_level']; ?>:</b>
-        <?php echo $r['remark_text']; ?><br>
-        <small><?php echo $r['remark_date']; ?></small>
-    </p>
+<div class="section">
+
+<h3>
+Land Details
+</h3>
+
+<p>
+<b>Province :</b>
+<?php echo $problem['province_name']; ?>
+</p>
+
+<p>
+<b>DS Division :</b>
+<?php echo $problem['ds_division']; ?>
+</p>
+
+<p>
+<b>GN Division :</b>
+<?php echo $problem['gn_division']; ?>
+</p>
+
+<p>
+<b>Village :</b>
+<?php echo $problem['village']; ?>
+</p>
+
+<p>
+<b>Plan Number :</b>
+<?php echo $problem['plan_number']; ?>
+</p>
+
+<p>
+<b>Lot Number :</b>
+<?php echo $problem['lot_number']; ?>
+</p>
+
+<p>
+<b>Extent :</b>
+
+<?php echo $problem['extent']; ?>
+
+(
+<?php echo $problem['extent_words']; ?>
+)
+
+</p>
+
+<p>
+<b>Boundaries :</b><br>
+
+<?php echo nl2br($problem['boundaries']); ?>
+
+</p>
+
+<p>
+<b>Alienation Method :</b>
+
+<?php echo $problem['alienation_method']; ?>
+
+</p>
+
+<p>
+<b>Legal Owner :</b>
+
+<?php echo $problem['legal_owner']; ?>
+
+</p>
+
+</div>
+
+
+<!-- Problem Details -->
+
+<div class="section">
+
+<h3>
+Problem Details
+</h3>
+
+<p>
+<b>Problem Type :</b>
+
+<?php echo $problem['problem_type']; ?>
+
+</p>
+
+<p>
+
+<?php
+
+echo nl2br(
+$problem['problem_description']
+);
+
+?>
+
+</p>
+
+</div>
+
+
+<!-- DS Recommendation -->
+
+<div class="section">
+
+<h3>
+DS Recommendation
+</h3>
+
+<p>
+
+<?php
+
+echo nl2br(
+
+$ds_remark['remark_text']
+?? 'Not Available'
+
+);
+
+?>
+
+</p>
+
+</div>
+
+
+<!-- Province Recommendation -->
+
+<div class="section">
+
+<h3>
+Province Recommendation
+</h3>
+
+<p>
+
+<?php
+
+echo nl2br(
+
+$province_remark['remark_text']
+?? 'Not Available'
+
+);
+
+?>
+
+</p>
+
+</div>
+
+
+<!-- Uploaded PDFs -->
+
+<div class="section">
+
+<h3>
+Uploaded PDF Documents
+</h3>
+
+
+<!-- PDF 1 -->
+
+<?php
+if($problem['document_1'] != "") {
+?>
+
+<a class="pdf-link"
+
+href="../uploads/<?php
+echo $problem['document_1']; ?>"
+
+target="_blank">
+
+📄 Preview / Download PDF 1
+
+</a>
+
 <?php } ?>
 
-<h3>LCG Final Decision</h3>
+
+<!-- PDF 2 -->
+
+<?php
+if($problem['document_2'] != "") {
+?>
+
+<a class="pdf-link"
+
+href="../uploads/<?php
+echo $problem['document_2']; ?>"
+
+target="_blank">
+
+📄 Preview / Download PDF 2
+
+</a>
+
+<?php } ?>
+
+
+<!-- PDF 3 -->
+
+<?php
+if($problem['document_3'] != "") {
+?>
+
+<a class="pdf-link"
+
+href="../uploads/<?php
+echo $problem['document_3']; ?>"
+
+target="_blank">
+
+📄 Preview / Download PDF 3
+
+</a>
+
+<?php } ?>
+
+</div>
+
+
+<!-- Final Decision -->
+
+<div class="section">
+
+<h3>
+Final LCG Decision
+</h3>
 
 <form method="post">
-    <textarea name="decision" required></textarea><br><br>
-    <button type="submit" name="save_decision" class="btn-login">
-        Submit Final Decision
-    </button>
+
+<textarea
+name="final_decision"
+required></textarea>
+
+<br><br>
+
+<button type="submit"
+name="submit"
+class="btn">
+
+Finalize Decision
+
+</button>
+
 </form>
 
-<br>
-<a href="dashboard.php">← Back to Dashboard</a>
+</div>
+
+
+<a href="dashboard.php"
+class="back-btn">
+
+← Back to Dashboard
+
+</a>
 
 </div>
 

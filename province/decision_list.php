@@ -5,32 +5,36 @@ include("../config/db.php");
 
 // Security Check
 if (!isset($_SESSION['user_id']) ||
-    $_SESSION['user_level'] != 'DS') {
+    $_SESSION['user_level'] != 'PROVINCE') {
 
     header("Location: ../login.php");
     exit();
 }
 
-$ds_user_id = $_SESSION['user_id'];
+$user_id = $_SESSION['user_id'];
 
 
-// Get DS User Area
+// Get Province User Details
 
 $user_query = mysqli_query(
 
 $conn,
 
-"SELECT ds_id
- FROM users
- WHERE id='$ds_user_id'"
+"SELECT
+
+province_id
+
+FROM users
+
+WHERE id='$user_id'"
 
 );
 
 $user_data =
 mysqli_fetch_assoc($user_query);
 
-$ds_id =
-$user_data['ds_id'];
+$province_id =
+$user_data['province_id'];
 
 ?>
 
@@ -39,7 +43,7 @@ $user_data['ds_id'];
 <head>
 
     <title>
-        DS – Decisions & History
+        Province Decisions & History
     </title>
 
     <link rel="stylesheet"
@@ -53,7 +57,7 @@ $user_data['ds_id'];
         }
 
         .container{
-            width:90%;
+            width:92%;
             margin:30px auto;
             background:white;
             padding:20px;
@@ -67,18 +71,32 @@ $user_data['ds_id'];
         table{
             width:100%;
             border-collapse:collapse;
-            background:white;
         }
 
         th, td{
-            padding:10px;
             border:1px solid #ccc;
+            padding:10px;
             text-align:left;
         }
 
         th{
-            background:#1b4f72;
+            background:#34495e;
             color:white;
+        }
+
+        .status-pending{
+            color:#e67e22;
+            font-weight:bold;
+        }
+
+        .status-lcg{
+            color:#3498db;
+            font-weight:bold;
+        }
+
+        .status-decided{
+            color:#27ae60;
+            font-weight:bold;
         }
 
         .view-btn{
@@ -87,16 +105,6 @@ $user_data['ds_id'];
             padding:6px 10px;
             text-decoration:none;
             border-radius:4px;
-        }
-
-        .status-pending{
-            color:#e67e22;
-            font-weight:bold;
-        }
-
-        .status-decided{
-            color:#27ae60;
-            font-weight:bold;
         }
 
         .back-btn{
@@ -118,7 +126,7 @@ $user_data['ds_id'];
 <div class="container">
 
     <h2>
-        Decisions & Full Problem History
+        Province Decisions & Full History
     </h2>
 
     <table>
@@ -151,15 +159,14 @@ $user_data['ds_id'];
                 p.submitted_date,
 
                 l.ds_division,
-                l.village,
-                l.ds_id
+                l.village
 
                 FROM problems p
 
                 JOIN land l
                 ON p.land_id = l.land_id
 
-                WHERE l.ds_id='$ds_id'
+                WHERE p.province_id='$province_id'
 
                 ORDER BY p.problem_id DESC";
 
@@ -194,19 +201,35 @@ $user_data['ds_id'];
                 <?php
 
                 if($row['current_status']
+                == 'PENDING_PLC') {
+
+                    echo '<span class="status-pending">
+                    PENDING PLC
+                    </span>';
+
+                }
+
+                elseif($row['current_status']
+                == 'PENDING_LCG') {
+
+                    echo '<span class="status-lcg">
+                    PENDING LCG
+                    </span>';
+
+                }
+
+                elseif($row['current_status']
                 == 'DECIDED') {
 
                     echo '<span class="status-decided">
                     DECIDED
                     </span>';
 
-                } else {
+                }
 
-                    echo '<span class="status-pending">' .
+                else {
 
-                    $row['current_status'] .
-
-                    '</span>';
+                    echo $row['current_status'];
                 }
 
                 ?>
@@ -221,10 +244,10 @@ $user_data['ds_id'];
 
                 <a class="view-btn"
 
-                href="decision_view.php?id=
-                <?php echo $row['problem_id']; ?>">
+               href="decision_view.php?id=
+               <?php echo $row['problem_id']; ?>">
 
-                View Details
+                View
 
                 </a>
 

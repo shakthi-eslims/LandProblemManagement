@@ -6,7 +6,7 @@ include("../config/db.php");
 // Security Check
 
 if (!isset($_SESSION['user_id']) ||
-    $_SESSION['user_level'] != 'DS') {
+    $_SESSION['user_level'] != 'LCG') {
 
     header("Location: ../login.php");
     exit();
@@ -58,7 +58,7 @@ $problem =
 mysqli_fetch_assoc($result);
 
 
-// DS Recommendation
+// Fetch DS Recommendation
 
 $ds_remark = mysqli_fetch_assoc(
 
@@ -83,7 +83,7 @@ user_level='DS'"
 );
 
 
-// Province Recommendation
+// Fetch Province Recommendation
 
 $province_remark = mysqli_fetch_assoc(
 
@@ -108,7 +108,7 @@ user_level='PROVINCE'"
 );
 
 
-// LCG Final Decision
+// Fetch LCG Final Decision
 
 $lcg_remark = mysqli_fetch_assoc(
 
@@ -139,7 +139,7 @@ user_level='LCG'"
 <head>
 
 <title>
-Problem Full Details
+LCG Decision View
 </title>
 
 <link rel="stylesheet"
@@ -160,6 +160,10 @@ body{
     border-radius:8px;
 }
 
+h2{
+    color:#1b4f72;
+}
+
 .section{
     margin-bottom:25px;
 }
@@ -175,12 +179,25 @@ p{
     line-height:1.8;
 }
 
+.status-box{
+    background:#ecf0f1;
+    padding:15px;
+    border-radius:5px;
+    margin-bottom:20px;
+}
+
+.status{
+    font-size:18px;
+    font-weight:bold;
+    color:#27ae60;
+}
+
 .pdf-link{
     display:block;
     margin-bottom:10px;
     color:#2e86de;
-    font-weight:bold;
     text-decoration:none;
+    font-weight:bold;
 }
 
 .back-btn{
@@ -193,12 +210,6 @@ p{
     border-radius:5px;
 }
 
-.status{
-    font-size:18px;
-    font-weight:bold;
-    color:#27ae60;
-}
-
 </style>
 
 </head>
@@ -208,8 +219,13 @@ p{
 <div class="container">
 
 <h2>
-Full Problem Details
+LCG Decisions & History View
 </h2>
+
+
+<!-- Status -->
+
+<div class="status-box">
 
 <p class="status">
 
@@ -217,6 +233,8 @@ Current Status :
 <?php echo $problem['current_status']; ?>
 
 </p>
+
+</div>
 
 
 <!-- Land Details -->
